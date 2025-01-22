@@ -8,7 +8,8 @@ import shutil
 import io
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/api/*": {"origins": "https://skin-disease-model.vercel.app"}})
+
 
 UPLOAD_FOLDER = "./uploads"
 RESULT_FOLDER = "./result"
