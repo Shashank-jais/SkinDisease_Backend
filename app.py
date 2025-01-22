@@ -72,88 +72,29 @@ def upload():
     try:
         # Segmentation
         result = segmentation_model.predict(img, save=True)[0]
-        segmented_image_path = os.path.join(result.save_dir, file.filename)
-        if not os.path.exists(segmented_image_path):
-            raise FileNotFoundError(f"Segmented image not found at {segmented_image_path}")
-        segmented_image = Image.open(segmented_image_path)
+        segmented_image = Image.open(os.path.join(result.save_dir, file.filename))
         images_base64.append(encode_image_from_pil(segmented_image))
 
         # Detection
         result = detection_model.predict(img, save=True)[0]
-        detected_image_path = os.path.join(result.save_dir, file.filename)
-        if not os.path.exists(detected_image_path):
-            raise FileNotFoundError(f"Detected image not found at {detected_image_path}")
-        detected_image = Image.open(detected_image_path)
+        detected_image = Image.open(os.path.join(result.save_dir, file.filename))
         images_base64.append(encode_image_from_pil(detected_image))
 
         # Classification
         results = classify_model(img)
-        if hasattr(results[0], 'probs'):
-            class_name = results[0].names[results[0].probs.top1]
-            probability = results[0].probs.top1conf.item()
-            try:
-                font = ImageFont.truetype("arial.ttf", size=20)
-            except OSError:
-                font = ImageFont.load_default()
-            classified_img = classify_and_add_text(img, class_name, probability)
-            images_base64.append(encode_image_from_pil(classified_img))
-        else:
-            raise ValueError("Classification model did not return probabilities.")
+        class_name = results[0].names[results[0].probs.top1]
+        probability = results[0].probs.top1conf.item()
+        classified_img = classify_and_add_text(img, class_name, probability)
+        images_base64.append(encode_image_from_pil(img))
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
     # Cleanup
-    shutil.rmtree(os.path.abspath('runs'), ignore_errors=True)
+    shutil.rmtree('runs', ignore_errors=True)
     os.remove(filepath)
 
     return jsonify({"processedResults": images_base64})
-
-
-
-
-# @app.route("/api/upload", methods=['POST'])
-# def upload():
-#     if "image" not in request.files:
-#         return jsonify({'error': "No such file part"}), 400
-#
-#     file = request.files['image']
-#     if file.filename == '':
-#         return jsonify({"error": "No selected file"}), 400
-#
-#     filepath = os.path.join(UPLOAD_FOLDER, file.filename)
-#     file.save(filepath)
-#
-#     # Open the image
-#     img = Image.open(filepath)
-#     images_base64 = []
-#
-#     try:
-#         # Segmentation
-#         result = segmentation_model.predict(img, save=True)[0]
-#         segmented_image = Image.open(os.path.join(result.save_dir, file.filename))
-#         images_base64.append(encode_image_from_pil(segmented_image))
-#
-#         # Detection
-#         result = detection_model.predict(img, save=True)[0]
-#         detected_image = Image.open(os.path.join(result.save_dir, file.filename))
-#         images_base64.append(encode_image_from_pil(detected_image))
-#
-#         # Classification
-#         results = classify_model(img)
-#         class_name = results[0].names[results[0].probs.top1]
-#         probability = results[0].probs.top1conf.item()
-#         classified_img = classify_and_add_text(img, class_name, probability)
-#         images_base64.append(encode_image_from_pil(classified_img))
-#
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
-#
-#     # Cleanup
-#     shutil.rmtree('runs', ignore_errors=True)
-#     os.remove(filepath)
-#
-#     return jsonify({"processedResults": images_base64})
 
 
 if __name__ == "__main__":
